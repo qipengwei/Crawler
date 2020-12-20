@@ -143,7 +143,7 @@ public class Main {
                 //爬取所有文档对象中的链接 并写入未处理链接
                 LoopWriteDataBase(connection, document);
                 //筛选有价值的数据 判断条件是带有article元素 即正文标题所包裹的标签 存入数据库 无价值则什么都不做
-                WriteToDatabase(connection ,document, link);
+                WriteToDatabase(connection, document, link);
                 //把本次使用过的链接放入响应数据库中
                 boolean isInsert = updateLinks(connection, "insert into LINKS_ALREADY_PROCESSED (link) values(?)", link);
                 if (isInsert) {
@@ -183,6 +183,8 @@ public class Main {
      * 筛选有价值的数据 判断条件是带有article元素 即正文标题所包裹的标签 存入数据库 无价值则什么都不做
      *
      * @param document HTML转换后的文档对象
+     * @param connection 数据库连接
+     * @param link 当前爬取链接
      */
     public static void WriteToDatabase(Connection connection, Document document, String link) throws SQLException {
         //筛选有价值的数据 判断条件是带有article元素 即正文标题所包裹的标签 存入数据库 无价值则什么都不做
