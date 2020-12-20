@@ -14,44 +14,45 @@ import org.jsoup.select.Elements;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Collectors;
 
 public class Main {
 
     /**
-     * 启动数据库连接并返回查询的链接集合
+     * 从数据库中拿出下一个集合进行爬取
+     *
      * @param connection 数据库地址链接
-     * @param sql sql语句
+     * @param sql        sql语句
      * @return List<String>
      */
-    public static List<String> queryUrls(Connection connection, String sql) throws SQLException {
-        List<String> urls = new ArrayList<>();
+    public static String queryNextUrl(Connection connection, String sql) throws SQLException {
+        String queryUrl = null;
         ResultSet resultSet = null;
-        try  {
+        try {
             //sql语句
             PreparedStatement statement = connection.prepareStatement(sql);
             //拿到结果集
             resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                urls.add(resultSet.getString(1));
+                queryUrl = resultSet.getString(1);
             }
         } finally {
             if (resultSet != null) {
                 resultSet.close();
             }
         }
-        return urls;
+        return queryUrl;
     }
 
     /**
      * 更新数据库链接操作 delete/insert
+     *
      * @param connection 数据库连接
-     * @param sql sql语句
-     * @param link 要删除的链接
+     * @param sql        sql语句
+     * @param link       要删除的链接
      * @return 删除成功返回 true 反之 false
      */
-    public static boolean UpdateLinks(Connection connection, String sql, String link) throws SQLException {
+    public static boolean updateLinks(Connection connection, String sql, String link) throws SQLException {
         int resultSet;
         PreparedStatement statement = null;
         try {
@@ -74,9 +75,10 @@ public class Main {
 
     /**
      * 查询链接是否在数据库中存在
+     *
      * @param connection 链接池
-     * @param sql sql查询
-     * @param link 要查询的链接
+     * @param sql        sql查询
+     * @param link       要查询的链接
      * @return true存在 false反之
      */
     public static boolean queryLinkExist(Connection connection, String sql, String link) throws SQLException {
@@ -90,7 +92,7 @@ public class Main {
             if (resultSet.next()) {
                 exist = true;
             }
-        }  finally {
+        } finally {
             if (resultSet != null) {
                 resultSet.close();
             }
@@ -98,24 +100,36 @@ public class Main {
         return exist;
     }
 
+    /**
+     * 拿出本次爬取的链接
+     *
+     * @param connection 数据库连接
+     * @return 返回本次爬取的链接 没有则为 null
+     */
+    public static String alterationDataBaseUrl(Connection connection) {
+        String link = null;
+        try {
+            //从需要爬取数据库 拿出 本次使用的链
+            link = queryNextUrl(connection, "select * from LINKS_TO_BE_PROCESSED limit 1");
+            //拿出本次爬取链接从原数据库删除
+            if (link != null) {
+                updateLinks(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", link);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+
+        return link;
+    }
+
     public static void main(String[] args) throws SQLException {
         //从数据库加载即将处理链接的代码
         File projectDir = new File(System.getProperty("basedir", System.getProperty("user.dir")));
         String jdbcUrl = "jdbc:h2:file:" + new File(projectDir, "target/mall").getAbsolutePath();
         Connection connection = DriverManager.getConnection(jdbcUrl);
-
-        //每次从数据源拿出一个链接
-        while (true) {
-            //从数据库中获取爬取的链接
-            List<String> linkeds = queryUrls(connection, "select * from LINKS_TO_BE_PROCESSED");
-            //加入初始值linkeds.add("https://news.sina.cn");select * from LINKS_TO_BE_PROCESSED
-            if (linkeds.isEmpty()) {
-                break;
-            }
-            //从末尾删除效率更高 从内存删除本次使用的链接linkeds.remove(linkeds.size() - 1)
-            String link = linkeds.remove(linkeds.size() - 1);
-            //从数据库删除本次使用的链接
-            UpdateLinks(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", link);
+        String link;
+        //从需要爬取数据库中 获取 本次爬取的链接循环条件为本次查询结果不为null
+        while ((link = alterationDataBaseUrl(connection)) != null) {
             //查询使用过数据库 如果链接在使用过的数据库中存在 则跳过本次链接处理
             boolean isLinkExist = queryLinkExist(connection, "select link from LINKS_ALREADY_PROCESSED where link = ?", link);
             if (isLinkExist) {
@@ -129,11 +143,11 @@ public class Main {
                 //爬取所有文档对象中的链接 并写入未处理链接
                 LoopWriteDataBase(connection, document);
                 //筛选有价值的数据 判断条件是带有article元素 即正文标题所包裹的标签 存入数据库 无价值则什么都不做
-                WriteToDatabase(document);
+                WriteToDatabase(connection ,document, link);
                 //把本次使用过的链接放入响应数据库中
-                boolean isInsert = UpdateLinks(connection, "insert into LINKS_ALREADY_PROCESSED (link) values(?)", link);
+                boolean isInsert = updateLinks(connection, "insert into LINKS_ALREADY_PROCESSED (link) values(?)", link);
                 if (isInsert) {
-                    System.out.println("处理过链接-插入");
+                    System.out.println("处理过链接-插入" + link);
                 }
             }
 
@@ -143,8 +157,9 @@ public class Main {
 
     /**
      * 爬虫循环条件 写入下次循环的链接
+     *
      * @param connection 数据库连接
-     * @param document 解析出的文档对象
+     * @param document   解析出的文档对象
      */
     public static void LoopWriteDataBase(Connection connection, Document document) {
         //拿出所有<a/>标签 返回集合转换为stream流对象集合
@@ -154,7 +169,10 @@ public class Main {
                 .map(tag -> tag.attr("href"))
                 .forEach(href -> {
                     try {
-                        UpdateLinks(connection, "insert into LINKS_TO_BE_PROCESSED (link) values(?)", href);
+                        //链接全部转换为小写后 开头不包含javascript 的路径才插入到数据库中
+                        if (!href.toLowerCase().startsWith("javascript") && !"#".equals(href) && href.length() > 0) {
+                            updateLinks(connection, "insert into LINKS_TO_BE_PROCESSED (link) values(?)", MergeUrl(href));
+                        }
                     } catch (SQLException throwables) {
                         throwables.printStackTrace();
                     }
@@ -163,31 +181,55 @@ public class Main {
 
     /**
      * 筛选有价值的数据 判断条件是带有article元素 即正文标题所包裹的标签 存入数据库 无价值则什么都不做
+     *
      * @param document HTML转换后的文档对象
      */
-    public static void WriteToDatabase(Document document) {
+    public static void WriteToDatabase(Connection connection, Document document, String link) throws SQLException {
         //筛选有价值的数据 判断条件是带有article元素 即正文标题所包裹的标签 存入数据库 无价值则什么都不做
         Elements articleTags = document.select("article");
         if (!articleTags.isEmpty()) {
             for (Element articleTag : articleTags) {
                 //爬取标题
                 String resultTitle = articleTag.select(".art_tit_h1").get(0).text();
-                System.out.println(resultTitle);
+                //爬取文章内容 所有得到的字符串用换行符分隔
+                String collect = articleTag
+                        .select("p")
+                        .stream()
+                        .map(tag -> tag.text())
+                        .collect(Collectors.joining("\n"));
+
+                try (PreparedStatement statement = connection.prepareStatement("insert into news(title, content, url, created_at, update_at) values (?, ?, ?, now(), now())")) {
+                    statement.setString(1, resultTitle);
+                    statement.setString(2, collect);
+                    statement.setString(3, link);
+                    statement.executeUpdate();
+                }
             }
         }
     }
 
     /**
+     * 处理带斜杠不带协议头的链接
+     *
+     * @param link 要判断的链接
+     * @return 拼接后的链接
+     */
+    public static String MergeUrl(String link) {
+        String url = link;
+        if (link.startsWith("//")) {
+            url = "https:" + link;
+            System.out.println(url + "加上https协议头链接");
+        }
+        return url;
+    }
+
+    /**
      * 爬取链接转换为HTML节点
+     *
      * @param link 本次爬取的链接
      * @return Document
      */
     public static Document HttpGetParseHtml(String link) {
-        if (link.startsWith("//")) {
-            link = "https:" + link;
-            System.out.println(link + "加上https协议头链接");
-        }
-
         CloseableHttpClient httpclient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(link);
         Document doc = null;
@@ -207,8 +249,10 @@ public class Main {
 
         return doc;
     }
+
     /**
      * 检测链接是否有价值
+     *
      * @param link 本次爬取的链接
      * @return boolean
      */
@@ -218,6 +262,7 @@ public class Main {
 
     /**
      * 判断链接是否为主页
+     *
      * @param link 本次爬取的链接
      * @return boolean
      */
@@ -227,6 +272,7 @@ public class Main {
 
     /**
      * 判断链接是否为新闻页面
+     *
      * @param link 本次爬取的链接
      * @return boolean
      */
@@ -236,6 +282,7 @@ public class Main {
 
     /**
      * 判断链接是否为登录页面
+     *
      * @param link 本次爬取的链接
      * @return boolean
      */
