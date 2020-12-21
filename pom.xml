@@ -52,6 +52,7 @@
         </profile>
     </profiles>
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.freemarker/freemarker -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
