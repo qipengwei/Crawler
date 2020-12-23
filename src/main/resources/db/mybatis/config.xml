@@ -7,10 +7,10 @@
         <environment id="development">
             <transactionManager type="JDBC"/>
             <dataSource type="POOLED">
-                <property name="driver" value="org.h2.Driver"/>
-                <property name="url" value="jdbc:h2:file:D:\JAVAPractice\Crawler-reset\target\mall"/>
-<!--                <property name="username" value="root"/>-->
-<!--                <property name="password" value="742599491"/>-->
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://localhost:3306/Crawler"/>
+                <property name="username" value="root"/>
+                <property name="password" value="742599491"/>
             </dataSource>
         </environment>
     </environments>

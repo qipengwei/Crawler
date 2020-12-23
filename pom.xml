@@ -52,6 +52,13 @@
         </profile>
     </profiles>
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.21</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.mybatis/mybatis -->
         <dependency>
             <groupId>org.mybatis</groupId>
@@ -107,7 +114,12 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>5.2.4</version>
                 <configuration>
-                    <url>jdbc:h2:file:D:\JAVAPractice\Crawler-reset\target\mall</url>
+                    <!--        H2            -->
+<!--                    <url>jdbc:h2:file:D:\JAVAPractice\Crawler-reset\target\mall</url>-->
+                    <!--          mysql          -->
+                    <url>jdbc:mysql://localhost:3306/Crawler</url>
+                    <user>root</user>
+                    <password>742599491</password>
                 </configuration>
             </plugin>
             <plugin>
