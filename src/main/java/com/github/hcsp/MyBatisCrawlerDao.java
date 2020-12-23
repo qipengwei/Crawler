@@ -53,7 +53,7 @@ public class MyBatisCrawlerDao implements CrawlerDao{
 
     @Override
     public int WriteCrawlOrigin(String link, String tableName) {
-        Map<String,Object> param = new HashMap<>();
+        Map<String, Object> param = new HashMap<>();
         param.put("tableName", tableName);
         param.put("link", link);
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
