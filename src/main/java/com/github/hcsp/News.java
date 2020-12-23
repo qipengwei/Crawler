@@ -9,8 +9,32 @@ public class News {
     private String title;
     private String content;
     private Integer id;
+    private String url;
     private Long created_at;
     private Long update_at;
+
+    public News(String title, String content, String url) {
+        this.title = title;
+        this.content = content;
+        this.url = url;
+    }
+
+    public News(String title, String content, Integer id, String url, Long created_at, Long update_at) {
+        this.title = title;
+        this.content = content;
+        this.id = id;
+        this.url = url;
+        this.created_at = created_at;
+        this.update_at = update_at;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
 
     public Long getCreated_at() {
         return created_at;

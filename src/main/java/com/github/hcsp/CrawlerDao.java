@@ -3,7 +3,6 @@ package com.github.hcsp;
 import java.sql.SQLException;
 
 public interface CrawlerDao {
-    int updateLinks(String link) throws SQLException;
 
     boolean queryLinkUsed(String link) throws SQLException;
 
