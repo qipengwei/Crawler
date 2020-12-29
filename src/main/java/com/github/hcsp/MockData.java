@@ -1,6 +1,5 @@
 package com.github.hcsp;
 
-import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;

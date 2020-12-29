@@ -8,7 +8,6 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -64,7 +63,7 @@ public class ElasticSearch {
                 for (News news : newsFormMysql) {
                     IndexRequest request = new IndexRequest("news");
                     Map<String, Object> data = new HashMap<>();
-                    data.put("content", news.getContent().length() > 10 ? news.getContent().substring(0,10) : news.getContent());
+                    data.put("content", news.getContent().length() > 10 ? news.getContent().substring(0, 10) : news.getContent());
                     data.put("url", news.getUrl());
                     data.put("title", news.getTitle());
                     data.put("createdAt", news.getCreatedAt());
