@@ -1,17 +1,22 @@
 package com.github.hcsp;
 
+import java.time.Instant;
 import java.util.Objects;
 
 /**
  * 新闻类
  */
 public class News {
-    private String title;
-    private String content;
     private Integer id;
+    private String title;
     private String url;
-    private Long created_at;
-    private Long update_at;
+    private String content;
+    private Instant createdAt;
+    private Instant modifiedAt;
+
+    public News() {
+
+    }
 
     public News(String title, String content, String url) {
         this.title = title;
@@ -19,13 +24,22 @@ public class News {
         this.url = url;
     }
 
-    public News(String title, String content, Integer id, String url, Long created_at, Long update_at) {
+    public News(News old) {
+        this.id = old.id;
+        this.title = old.title;
+        this.url = old.url;
+        this.content = old.content;
+        this.createdAt = old.createdAt;
+        this.modifiedAt = old.modifiedAt;
+    }
+
+    public News(String title, String content, Integer id, String url, Instant created_at, Instant modified_at) {
         this.title = title;
         this.content = content;
         this.id = id;
         this.url = url;
-        this.created_at = created_at;
-        this.update_at = update_at;
+        this.createdAt = created_at;
+        this.modifiedAt = modified_at;
     }
 
     public String getUrl() {
@@ -36,20 +50,20 @@ public class News {
         this.url = url;
     }
 
-    public Long getCreated_at() {
-        return created_at;
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreated_at(Long created_at) {
-        this.created_at = created_at;
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public Long getUpdate_at() {
-        return update_at;
+    public Instant getModifiedAt() {
+        return modifiedAt;
     }
 
-    public void setUpdate_at(Long update_at) {
-        this.update_at = update_at;
+    public void setModifiedAt(Instant modifiedAt) {
+        this.modifiedAt = modifiedAt;
     }
 
     public String getTitle() {
@@ -84,8 +98,8 @@ public class News {
                 "title='" + title + '\'' +
                 ", content='" + content + '\'' +
                 ", id=" + id +
-                ", created_at=" + created_at +
-                ", update_at=" + update_at +
+                ", created_at=" + createdAt +
+                ", modified_at=" + modifiedAt +
                 '}';
     }
 

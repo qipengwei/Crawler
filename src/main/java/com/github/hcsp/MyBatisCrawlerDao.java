@@ -36,11 +36,12 @@ public class MyBatisCrawlerDao implements CrawlerDao{
     }
 
     /**
+     * 方法中含有两段操作  所以为了一致性把方法变成原子操作
      * 消费本次爬取的url
      * @return 返回本次要消费的url
      */
     @Override
-    public String ConsumptionUnusedUrl() {
+    public synchronized String ConsumptionUnusedUrl() {
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
             String link = session.selectOne("com.github.hcsp.Crawler.selectNextLink");
             if (link != null) {

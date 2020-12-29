@@ -15,23 +15,24 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.stream.Collectors;
 
-public class Crawler {
-    public CrawlerDao dao = new MyBatisCrawlerDao();
+public class Crawler extends Thread{
+    public CrawlerDao dao;
 
-    public static void main(String[] args) {
-        try {
-            new Crawler().run();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
+    public Crawler(CrawlerDao dao) {
+        this.dao = dao;
     }
 
-    public void run() throws SQLException {
+    public void run()  {
         String link;
         //从需要爬取数据库中 获取 本次爬取的链接循环条件为本次查询结果不为null
         while ((link = dao.ConsumptionUnusedUrl()) != null) {
             //查询使用过数据库 如果链接在使用过的数据库中存在 则跳过本次链接处理
-            boolean isLinkExist = dao.queryLinkUsed(link);
+            boolean isLinkExist = false;
+            try {
+                isLinkExist = dao.queryLinkUsed(link);
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
             if (isLinkExist) {
                 //进行下次处理
                 continue;
@@ -40,10 +41,17 @@ public class Crawler {
             if (Concerned(link)) {
                 //链接转换为文档对象
                 Document document = HttpGetParseHtml(link);
-                //爬取所有文档对象中的链接 并写入未处理链接
-                LoopWriteDataBase(document);
-                //筛选有价值的数据 判断条件是带有article元素 即正文标题所包裹的标签 存入数据库 无价值则什么都不做
-                WriteToDatabase(document, link);
+                if (document != null) {
+                    //爬取所有文档对象中的链接 并写入未处理链接
+                    LoopWriteDataBase(document);
+                    //筛选有价值的数据 判断条件是带有article元素 即正文标题所包裹的标签 存入数据库 无价值则什么都不做
+                    try {
+                        WriteToDatabase(document, link);
+                    } catch (SQLException throwables) {
+                        throwables.printStackTrace();
+                    }
+                }
+
                 //把本次使用过的链接放入响应数据库中 进行过滤操作
                 int isInsert = dao.WriteUseCrawl(link);
                 if (isInsert > 0) {
@@ -69,7 +77,7 @@ public class Crawler {
                 .forEach(href -> {
                     //链接全部转换为小写后 开头不包含javascript 的路径才插入到数据库中
                     if (InsertDataBaseCheck(href)) {
-                        dao.WriteNotCrawl(href);
+                        dao.WriteNotCrawl(MergeUrl(href));
                     }
                 });
     }
